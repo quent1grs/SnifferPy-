@@ -1,0 +1,5 @@
+Faire le trie entre IPV4 et IPV6.
+Récuperer toutes les IPV4 supprimé les doublons
+Les stocké dans un fichier texte pour le moment et dans une variable après pour réutiliser dans l'interface graphique.
+Ajouter des outils comme nmap, gobuster ou autre dans l'interace graphique pour pouvoir faire des recherches avancés sur les ip stocker.
+Laisser le choix de scanner une ip ou un réseau en particulier, Ou alors uniquement le réseau connecter.
