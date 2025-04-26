@@ -11,8 +11,7 @@
 Pour lancer ce projet, clonez le repo
 Déplacez vous dans le dossier du repo 
 
-Si vous souhaitez un environnement python run :```python 
-python3 -m venv 
+Si vous souhaitez un environnement python run :```python3 -m venv 
 Nom_De_l'environnement``` 
 
 Pour activer l'environnement faites : 
