@@ -56,23 +56,22 @@ Scapy |https://scapy.net
 | Os |https://docs.python.org/fr/3.13/library/os.html|
 | Subprocess|https://docs.python.org/3/library/subprocess.html|
 
+## TCP Flags Table
+
+| Lettre | Signification (Flag TCP) | Description |
+|:------:|:------------------------:|:-----------:|
+| S      | SYN (Synchronize)         | Début de connexion |
+| A      | ACK (Acknowledge)         | Accusé de réception |
+| F      | FIN (Finish)              | Fin de connexion |
+| R      | RST (Reset)               | Réinitialisation de connexion |
+| P      | PSH (Push)                | Demande de traitement immédiat des données |
+| U      | URG (Urgent)              | Données urgentes |
+| E      | ECE (Explicit Congestion Notification Echo) | Signal de congestion |
+| W      | CWR (Congestion Window Reduced) | Contrôle de congestion |
+| RAW    | RAW DATA                  | Données brutes non analysables |
+
+
 ## Authors
 
 - [@quent1grs](https://github.com/quent1grs)
 - [@Decorentin](https://github.com/Decorentin)
-
-
-
-TCP Flags Table :
-
-Lettre | Signification (Flag TCP)                     | Description
-S      | SYN  (Synchronize)                           | Début de connexion
-A      | ACK  (Acknowledge)                           | Accusé de réception
-F      | FIN  (Finish)                                | Fin de connexion
-R      | RST  (Reset)                                 | Réinitialisation de connexion
-P      | PSH  (Push)                                  | Demande de traitement immédiat des données
-U      | URG  (Urgent)                                | Données urgentes
-E      | ECE  (Explicit Congestion Notification Echo) | Signal de congestion
-W      | CWR  (Congestion Window Reduced)             | Contrôle de congestion
-RAW    | RAW DATA                                     | Données Brute non parsé donc pas analysable.
-
