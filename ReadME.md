@@ -68,7 +68,7 @@ Scapy |https://scapy.net
 | U      | URG (Urgent)              | Données urgentes |
 | E      | ECE (Explicit Congestion Notification Echo) | Signal de congestion |
 | W      | CWR (Congestion Window Reduced) | Contrôle de congestion |
-| RAW    | RAW DATA                  | Données brutes non analysables |
+| RAW    | RAW DATA                  | Données brutes |
 
 
 ## Authors
