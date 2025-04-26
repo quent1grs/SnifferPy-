@@ -56,7 +56,7 @@ Scapy |https://scapy.net
 | Os |https://docs.python.org/fr/3.13/library/os.html|
 | Subprocess|https://docs.python.org/3/library/subprocess.html|
 
-## TCP Flags Table
+## TCP Flags
 
 | Lettre | Signification (Flag TCP) | Description |
 |:------:|:------------------------:|:-----------:|
