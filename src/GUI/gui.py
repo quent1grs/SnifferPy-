@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import scrolledtext, ttk
 import os
 import stat
-
+import datetime  # <-- pour l'horodatage
 
 # Variables globales pour compter les protocoles
 TCPcount = 0
@@ -17,9 +17,8 @@ unknowncount = 0
 IPv4count = 0
 IPv6count = 0
 
-# Dossier et fichier de sauvegarde
+# Dossier de sauvegarde
 SAVE_DIR = "save"
-SAVE_FILE = os.path.join(SAVE_DIR, "capture_resultats.txt")
 
 # Fonction pour déterminer le nom du protocole
 def get_protocol_name(packet):
@@ -90,12 +89,17 @@ class PacketSnifferApp:
             # Si besoin de sauvegarder : créer le dossier 'save' s'il n'existe pas
             if not os.path.exists(SAVE_DIR):
                 os.makedirs(SAVE_DIR)
+
+            # Générer un nom de fichier unique avec un horodatage
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.save_file = os.path.join(SAVE_DIR, f"capture_resultats_{timestamp}.txt")
+
             # Vider le fichier au début de la capture
-            with open(SAVE_FILE, "w") as f:
+            with open(self.save_file, "w") as f:
                 f.write("Début de la capture...\n\n")
 
             # Changer les permissions du fichier pour permettre à tous les utilisateurs de le supprimer
-            os.chmod(SAVE_FILE, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+            os.chmod(self.save_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
 
         self.output_text.delete(1.0, tk.END)
         threading.Thread(target=self.sniff_packets, args=(interface, int(packet_count)), daemon=True).start()
@@ -112,7 +116,7 @@ IPv4: {IPv4count} | IPv6: {IPv6count}
             self.output_text.see(tk.END)
 
             if self.save_var.get():
-                with open(SAVE_FILE, "a") as f:
+                with open(self.save_file, "a") as f:
                     f.write("\n" + resume)
 
         except Exception as e:
@@ -173,7 +177,7 @@ IPv4: {IPv4count} | IPv6: {IPv6count}
 
             # Sauvegarde dans le fichier si demandé
             if self.save_var.get():
-                with open(SAVE_FILE, "a") as f:
+                with open(self.save_file, "a") as f:
                     f.write(info)
 
         except Exception as e:
