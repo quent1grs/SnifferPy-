@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import scrolledtext, ttk
 import os
 import stat
-import datetime  # <-- pour l'horodatage
+import datetime
 
 # Variables globales pour compter les protocoles
 TCPcount = 0
@@ -69,9 +69,16 @@ class PacketSnifferApp:
         self.start_button = tk.Button(master, text="Démarrer la Capture", command=self.start_sniffer)
         self.start_button.pack()
 
+        # Bouton arrêter la capture
+        self.stop_button = tk.Button(master, text="Arrêter la Capture", command=self.stop_sniffer, state=tk.DISABLED)
+        self.stop_button.pack()
+
         # Zone d'affichage des résultats
         self.output_text = scrolledtext.ScrolledText(master, wrap=tk.WORD, width=100, height=30)
         self.output_text.pack()
+
+        # Drapeau pour indiquer si la capture doit être arrêtée
+        self.stop_flag = threading.Event()
 
     def start_sniffer(self):
         interface = self.interface_combo.get()
@@ -102,11 +109,19 @@ class PacketSnifferApp:
             os.chmod(self.save_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
 
         self.output_text.delete(1.0, tk.END)
+        self.stop_flag.clear()  # Réinitialiser le drapeau
+        self.start_button.config(state=tk.DISABLED)
+        self.stop_button.config(state=tk.NORMAL)
         threading.Thread(target=self.sniff_packets, args=(interface, int(packet_count)), daemon=True).start()
+
+    def stop_sniffer(self):
+        self.stop_flag.set()  # Définir le drapeau pour arrêter la capture
+        self.start_button.config(state=tk.NORMAL)
+        self.stop_button.config(state=tk.DISABLED)
 
     def sniff_packets(self, interface, packet_count):
         try:
-            scapy.sniff(iface=interface, prn=self.print_info, count=packet_count)
+            scapy.sniff(iface=interface, prn=self.print_info, stop_filter=lambda x: self.stop_flag.is_set(), count=packet_count)
             resume = f"""
 Capture terminée.
 TCP: {TCPcount} | UDP: {UDPcount} | ARP: {ARPcount} | ICMP: {ICMPcount} | ICMPv6: {ICMPv6count} | DNS: {DNScount} | Inconnus: {unknowncount}
@@ -122,6 +137,9 @@ IPv4: {IPv4count} | IPv6: {IPv6count}
         except Exception as e:
             self.output_text.insert(tk.END, f"Erreur: {e}\n")
             self.output_text.see(tk.END)
+        finally:
+            self.start_button.config(state=tk.NORMAL)
+            self.stop_button.config(state=tk.DISABLED)
 
     def print_info(self, packet):
         global TCPcount, UDPcount, ARPcount, ICMPcount, ICMPv6count, DNScount, unknowncount, IPv4count, IPv6count
