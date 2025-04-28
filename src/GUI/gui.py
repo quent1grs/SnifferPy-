@@ -2,6 +2,9 @@ import scapy.all as scapy
 import threading
 import tkinter as tk
 from tkinter import scrolledtext, ttk
+import os
+import stat
+
 
 # Variables globales pour compter les protocoles
 TCPcount = 0
@@ -13,6 +16,10 @@ DNScount = 0
 unknowncount = 0
 IPv4count = 0
 IPv6count = 0
+
+# Dossier et fichier de sauvegarde
+SAVE_DIR = "save"
+SAVE_FILE = os.path.join(SAVE_DIR, "capture_resultats.txt")
 
 # Fonction pour déterminer le nom du protocole
 def get_protocol_name(packet):
@@ -54,6 +61,11 @@ class PacketSnifferApp:
         self.packet_count_entry.insert(0, "20")  # Valeur par défaut
         self.packet_count_entry.pack()
 
+        # Checkbox pour sauvegarder ou non
+        self.save_var = tk.BooleanVar()
+        self.save_checkbox = tk.Checkbutton(master, text="Enregistrer la capture dans un fichier", variable=self.save_var)
+        self.save_checkbox.pack()
+
         # Bouton démarrer la capture
         self.start_button = tk.Button(master, text="Démarrer la Capture", command=self.start_sniffer)
         self.start_button.pack()
@@ -65,6 +77,25 @@ class PacketSnifferApp:
     def start_sniffer(self):
         interface = self.interface_combo.get()
         packet_count = self.packet_count_entry.get()
+
+        if not interface:
+            self.output_text.insert(tk.END, "Veuillez choisir une interface réseau.\n")
+            return
+
+        if not packet_count.isdigit():
+            self.output_text.insert(tk.END, "Veuillez entrer un nombre valide de paquets.\n")
+            return
+
+        if self.save_var.get():
+            # Si besoin de sauvegarder : créer le dossier 'save' s'il n'existe pas
+            if not os.path.exists(SAVE_DIR):
+                os.makedirs(SAVE_DIR)
+            # Vider le fichier au début de la capture
+            with open(SAVE_FILE, "w") as f:
+                f.write("Début de la capture...\n\n")
+
+            # Changer les permissions du fichier pour permettre à tous les utilisateurs de le supprimer
+            os.chmod(SAVE_FILE, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
 
         self.output_text.delete(1.0, tk.END)
         threading.Thread(target=self.sniff_packets, args=(interface, int(packet_count)), daemon=True).start()
@@ -79,6 +110,10 @@ IPv4: {IPv4count} | IPv6: {IPv6count}
 """
             self.output_text.insert(tk.END, resume)
             self.output_text.see(tk.END)
+
+            if self.save_var.get():
+                with open(SAVE_FILE, "a") as f:
+                    f.write("\n" + resume)
 
         except Exception as e:
             self.output_text.insert(tk.END, f"Erreur: {e}\n")
@@ -132,8 +167,14 @@ IPv4: {IPv4count} | IPv6: {IPv6count}
             info += f"Résumé: {packet.summary()}\n"
             info += "-"*50 + "\n"
 
+            # Affichage à l'écran
             self.output_text.insert(tk.END, info)
             self.output_text.see(tk.END)
+
+            # Sauvegarde dans le fichier si demandé
+            if self.save_var.get():
+                with open(SAVE_FILE, "a") as f:
+                    f.write(info)
 
         except Exception as e:
             self.output_text.insert(tk.END, f"Erreur: {e}\n")
