@@ -24,7 +24,7 @@ Maintenant vous devez installer les dépendance : ```pip install -r requierement
 
 Afin de lancer le projet il vous faudra être en root car Scapy a besoin des autorisations root pour fonctionner. 
 
-Faites : ``` sudo python3 src/sniffer.py ``` pour lancer le sniffer.
+Faites : ``` sudo python3 src/Sniffer/sniffer.py ``` pour lancer le sniffer.
 
 Choisissez l'interface sur laquelle vous voulez écoutez et ensuite choisissez le nombre de paquet a Capturer .
 

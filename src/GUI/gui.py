@@ -1,21 +1,145 @@
+import scapy.all as scapy
+import threading
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, ttk
 
-root = tk.Tk()
-root.title("Sniffer GUI")
+# Variables globales pour compter les protocoles
+TCPcount = 0
+UDPcount = 0
+ARPcount = 0
+ICMPcount = 0
+ICMPv6count = 0
+DNScount = 0
+unknowncount = 0
+IPv4count = 0
+IPv6count = 0
 
-# Ajouter un bouton pour démarrer le sniffer
-start_button = tk.Button(root, text="Start Sniffer", command=sniffer.start_sniffer)
+# Fonction pour déterminer le nom du protocole
+def get_protocol_name(packet):
+    if packet.haslayer(scapy.TCP):
+        return "TCP"
+    elif packet.haslayer(scapy.UDP):
+        return "UDP"
+    elif packet.haslayer(scapy.ARP):
+        return "ARP"
+    elif packet.haslayer(scapy.ICMP):
+        return "ICMP"
+    elif packet.haslayer(scapy.ICMPv6EchoRequest) or packet.haslayer(scapy.ICMPv6EchoReply):
+        return "ICMPv6"
+    elif packet.haslayer(scapy.DNS):
+        return "DNS"
+    else:
+        return "Unknown"
 
-start_button.pack(pady=10)
+class PacketSnifferApp:
+    def __init__(self, master):
+        self.master = master
+        master.title("Sniffeur de Paquets Réseau")
 
-# Ajouter un bouton pour arrêter le sniffer
-stop_button = tk.Button(root, text="Stop Sniffer", command=stop_sniffer)
-stop_button.pack(pady=10)
+        # Liste des interfaces disponibles
+        self.interfaces = scapy.get_if_list()
 
-# Ajouter une zone de texte défilante pour afficher les paquets capturés
-text_area = scrolledtext.ScrolledText(root, width=100, height=20)
-text_area.pack(pady=10)
+        # Choix de l'interface réseau
+        self.interface_label = tk.Label(master, text="Interface Réseau :")
+        self.interface_label.pack()
 
-# Démarrer la boucle principale de l'application
-root.mainloop()
+        self.interface_combo = ttk.Combobox(master, values=self.interfaces)
+        self.interface_combo.pack()
+
+        # Choix du nombre de paquets
+        self.packet_count_label = tk.Label(master, text="Nombre de paquets à capturer :")
+        self.packet_count_label.pack()
+
+        self.packet_count_entry = tk.Entry(master)
+        self.packet_count_entry.insert(0, "20")  # Valeur par défaut
+        self.packet_count_entry.pack()
+
+        # Bouton démarrer la capture
+        self.start_button = tk.Button(master, text="Démarrer la Capture", command=self.start_sniffer)
+        self.start_button.pack()
+
+        # Zone d'affichage des résultats
+        self.output_text = scrolledtext.ScrolledText(master, wrap=tk.WORD, width=100, height=30)
+        self.output_text.pack()
+
+    def start_sniffer(self):
+        interface = self.interface_combo.get()
+        packet_count = self.packet_count_entry.get()
+
+        self.output_text.delete(1.0, tk.END)
+        threading.Thread(target=self.sniff_packets, args=(interface, int(packet_count)), daemon=True).start()
+
+    def sniff_packets(self, interface, packet_count):
+        try:
+            scapy.sniff(iface=interface, prn=self.print_info, count=packet_count)
+            resume = f"""
+Capture terminée.
+TCP: {TCPcount} | UDP: {UDPcount} | ARP: {ARPcount} | ICMP: {ICMPcount} | ICMPv6: {ICMPv6count} | DNS: {DNScount} | Inconnus: {unknowncount}
+IPv4: {IPv4count} | IPv6: {IPv6count}
+"""
+            self.output_text.insert(tk.END, resume)
+            self.output_text.see(tk.END)
+
+        except Exception as e:
+            self.output_text.insert(tk.END, f"Erreur: {e}\n")
+            self.output_text.see(tk.END)
+
+    def print_info(self, packet):
+        global TCPcount, UDPcount, ARPcount, ICMPcount, ICMPv6count, DNScount, unknowncount, IPv4count, IPv6count
+
+        try:
+            protocol = get_protocol_name(packet)
+            info = f"Protocole: {protocol}\n"
+
+            # Détection IPv4 ou IPv6
+            if packet.haslayer(scapy.IP):
+                info += "Protocole IP : IPv4\n"
+                info += f"IP Source: {packet[scapy.IP].src}\n"
+                info += f"IP Destination: {packet[scapy.IP].dst}\n"
+                IPv4count += 1
+
+            elif packet.haslayer(scapy.IPv6):
+                info += "Protocole IP : IPv6\n"
+                info += f"IP Source: {packet[scapy.IPv6].src}\n"
+                info += f"IP Destination: {packet[scapy.IPv6].dst}\n"
+                IPv6count += 1
+
+            if packet.haslayer(scapy.TCP):
+                info += f"Port Source: {packet[scapy.TCP].sport}\n"
+                info += f"Port Destination: {packet[scapy.TCP].dport}\n"
+                TCPcount += 1
+
+            if packet.haslayer(scapy.UDP):
+                info += f"Port Source: {packet[scapy.UDP].sport}\n"
+                info += f"Port Destination: {packet[scapy.UDP].dport}\n"
+                UDPcount += 1
+
+            if packet.haslayer(scapy.ICMP):
+                ICMPcount += 1
+
+            if packet.haslayer(scapy.ICMPv6EchoRequest) or packet.haslayer(scapy.ICMPv6EchoReply):
+                ICMPv6count += 1
+
+            if packet.haslayer(scapy.ARP):
+                ARPcount += 1
+
+            if packet.haslayer(scapy.DNS):
+                DNScount += 1
+
+            if protocol == "Unknown":
+                unknowncount += 1
+
+            info += f"Résumé: {packet.summary()}\n"
+            info += "-"*50 + "\n"
+
+            self.output_text.insert(tk.END, info)
+            self.output_text.see(tk.END)
+
+        except Exception as e:
+            self.output_text.insert(tk.END, f"Erreur: {e}\n")
+            self.output_text.see(tk.END)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PacketSnifferApp(root)
+    root.mainloop()
