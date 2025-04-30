@@ -1,6 +1,6 @@
 from scapy.layers.inet6 import *
 import scapy.all as scapy
-
+from datetime import datetime
 
 # ________________________________________________________________________verif proto et count
 TCPcount = 0
@@ -10,6 +10,10 @@ ICMPcount = 0
 ICMPv6count =0
 DNScount = 0
 unknowncount = 0
+RegisteredIpCount = 0
+RegisteredIpErrors = []
+
+
 
 def get_protocol_name(packet):
     if packet.haslayer(scapy.TCP):
@@ -27,9 +31,10 @@ def get_protocol_name(packet):
     else:
         return "Unknown"
 # _____________________________________________________________________________________________________print les info par rapport au proto
+Iplist = set ()
+filename = f"logs/ips_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
 def print_info(packet):
-    global TCPcount, UDPcount, ARPcount, ICMPcount, ICMPv6count, DNScount, unknowncount
-    
+    global TCPcount, UDPcount, ARPcount, ICMPcount, ICMPv6count, DNScount, unknowncount , RegisteredIpCount
     try:
         protocol = get_protocol_name(packet)
         print(f"Protocole: {protocol}")
@@ -37,7 +42,19 @@ def print_info(packet):
         if packet.haslayer(scapy.IP):
             print(f"IP Source: {packet[scapy.IP].src}")
             print(f"IP Destination: {packet[scapy.IP].dst}")
-        
+            ip = (packet[scapy.IP].src)
+            if ip not in Iplist :
+                Iplist.add(ip)
+                RegisteredIpCount += 1
+                print(f"IP enregistré avec surcces")
+                try:
+                    with open(filename, "a") as f:
+                        f.write(ip + "\n")
+                except Exception as err:
+                    RegisteredIpErrors.append(f"Erreur d'écriture IP: {err}")
+
+                    
+                         
         if packet.haslayer(scapy.TCP):
             print(f"Port Source: {packet[scapy.TCP].sport}")
             print(f"Port Destination: {packet[scapy.TCP].dport}")
@@ -51,8 +68,8 @@ def print_info(packet):
         if "ICMPv6" in packet.summary():
             ICMPv6count += 1
             print("[+] ICMPv6 détecté")
-        if "ICMPv6ND_NS" in packet.summary():
-            ICMPv6count += 1
+        elif "ICMPv6ND_NS" in packet.summary():
+            # ICMPv6count += 1
             print("    ↳ Type: Neighbor Solicitation")
             try:
                 target = packet[scapy.ICMPv6ND_NS].tgt
@@ -100,7 +117,6 @@ def print_info(packet):
         
     except Exception as e:
         print(f"Erreur lors de l'analyse du paquet: {e}")
-    
     print("\n" + ("-" * 50) + "\n")
 # _____________________________________________________________________________________________________ input et gestion d'erreur de l'input
 print("\nInterfaces réseau disponibles:" '\n')
@@ -121,9 +137,12 @@ while True:
     else:
         print("Erreur : veuillez entrer un entier positif.")
 # _____________________________________________________________________________________________________ début de la capture, print des infos et résumé des count
+
 print(f"\nDébut de la capture de {count} paquets sur l'interface {interface_name}...\n")
 def start_sniffer():
     return scapy.sniff(iface=interface_name, prn=print_info, count=count)
+    
+
 p = start_sniffer()
 print(f"\nCapture terminée. {len(p)} paquets capturés.")
 print(f"Paquets TCP capturés: {TCPcount}")
@@ -133,4 +152,10 @@ print(f"Paquets ICMP capturés: {ICMPcount}")
 print(f"Paquets ICMPv6 capturés: {ICMPv6count}")
 print(f"Paquets DNS capturés: {DNScount}")
 print(f"Paquets inconnus capturés: {unknowncount}")
-# _____________________________________________________________________________________________________
+if RegisteredIpErrors:
+    print(f"Erreurs lors de l'enregistrement des IP: ")
+    for error in RegisteredIpErrors:
+        print(f"- {error}")
+else:
+    print(f"{RegisteredIpCount} Nouvelles IP ont été enregistrées dans /logs/{filename}")
+
