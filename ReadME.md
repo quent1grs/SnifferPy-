@@ -24,7 +24,7 @@ Maintenant vous devez installer les dépendance : ```pip install -r requierement
 
 Afin de lancer le projet il vous faudra être en root car Scapy a besoin des autorisations root pour fonctionner. 
 
-Faites : ``` sudo python3 src/Sniffer/sniffer.py ``` pour lancer le sniffer.
+Faites : ``` sudo python3 src/GUI/gui.py ``` pour lancer le sniffer.
 
 Choisissez l'interface sur laquelle vous voulez écoutez et ensuite choisissez le nombre de paquet a Capturer .
 
@@ -36,13 +36,13 @@ Après avoir utilisé le sniffer, si vous voulez quitter l'environnement faites 
 
 ## Features
 
-Dans une future mise a jour il vous sera possible d'enregistrer vos capture en ".pcap" ou ".txt" 
+Enregistrement des captures : Vous pouvez enregistrer vos captures en .pcap ou .txt.
 
-Une interface utilisateur graphique sera également disponible. 
+Interface utilisateur graphique : Une interface utilisateur graphique est disponible pour une meilleure expérience utilisateur.
 
-Certains protocole comme le SSH, POP3, SMB, RDP, LDAP ou IMAP seront par la suite ajouté pour pouvoir travailler sur chaque protocole et ne plus avoir des inconnus ou presque.
+Analyse des protocoles : Le sniffer prend en charge plusieurs protocoles, et d'autres comme SSH, POP3, SMB, RDP, LDAP, et IMAP seront ajoutés dans les futures mises à jour.
 
-Quelques outils tels que Nmap, Hashcat, nitko, gobuster, ou encore enum4linux viendront compléter notre sniffer afin de pouvoir faire un outils de réseau / pentest assez complet.
+Outils complémentaires : Des outils tels que Nmap, Hashcat, Nikto, Gobuster, ou encore Enum4linux viendront compléter notre sniffer afin de pouvoir faire un outil de réseau/pentest assez complet.
 
 ## Packages
 | Package             | Liens                                              
