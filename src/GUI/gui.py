@@ -41,44 +41,64 @@ class PacketSnifferApp:
     def __init__(self, master):
         self.master = master
         master.title("Sniffeur de Paquets Réseau")
+        master.configure(bg='#f0f0f0')
+
+        # Style pour les widgets
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        self.style.configure('TLabel', background='#f0f0f0', font=('Helvetica', 10))
+        self.style.configure('TButton', background='#4a7a8c', foreground='white', font=('Helvetica', 10))
+        self.style.configure('TCombobox', font=('Helvetica', 10))
+        self.style.configure('TCheckbutton', background='#f0f0f0', font=('Helvetica', 10))
 
         # Liste des interfaces disponibles
         self.interfaces = scapy.get_if_list()
 
         # Choix de l'interface réseau
-        self.interface_label = tk.Label(master, text="Interface Réseau :")
-        self.interface_label.pack()
+        self.interface_label = ttk.Label(master, text="Interface Réseau :")
+        self.interface_label.pack(pady=5)
 
         self.interface_combo = ttk.Combobox(master, values=self.interfaces)
-        self.interface_combo.pack()
+        self.interface_combo.pack(pady=5)
 
         # Choix du nombre de paquets
-        self.packet_count_label = tk.Label(master, text="Nombre de paquets à capturer :")
-        self.packet_count_label.pack()
+        self.packet_count_label = ttk.Label(master, text="Nombre de paquets à capturer :")
+        self.packet_count_label.pack(pady=5)
 
-        self.packet_count_entry = tk.Entry(master)
+        self.packet_count_entry = ttk.Entry(master)
         self.packet_count_entry.insert(0, "20")  # Valeur par défaut
-        self.packet_count_entry.pack()
+        self.packet_count_entry.pack(pady=5)
 
         # Checkbox pour sauvegarder ou non
         self.save_var = tk.BooleanVar()
-        self.save_checkbox = tk.Checkbutton(master, text="Enregistrer la capture dans un fichier", variable=self.save_var)
-        self.save_checkbox.pack()
+        self.save_checkbox = ttk.Checkbutton(master, text="Enregistrer la capture", variable=self.save_var)
+        self.save_checkbox.pack(pady=5)
+
+        # Choix du format de fichier
+        self.format_label = ttk.Label(master, text="Format de fichier :")
+        self.format_label.pack(pady=5)
+
+        self.format_var = tk.StringVar(value=".txt")
+        self.format_txt = ttk.Radiobutton(master, text=".txt", variable=self.format_var, value=".txt")
+        self.format_txt.pack(pady=2)
+        self.format_pcap = ttk.Radiobutton(master, text=".pcap", variable=self.format_var, value=".pcap")
+        self.format_pcap.pack(pady=2)
 
         # Bouton démarrer la capture
-        self.start_button = tk.Button(master, text="Démarrer la Capture", command=self.start_sniffer)
-        self.start_button.pack()
+        self.start_button = ttk.Button(master, text="Démarrer la Capture", command=self.start_sniffer)
+        self.start_button.pack(pady=10)
 
         # Bouton arrêter la capture
-        self.stop_button = tk.Button(master, text="Arrêter la Capture", command=self.stop_sniffer, state=tk.DISABLED)
-        self.stop_button.pack()
+        self.stop_button = ttk.Button(master, text="Arrêter la Capture", command=self.stop_sniffer, state=tk.DISABLED)
+        self.stop_button.pack(pady=10)
 
         # Zone d'affichage des résultats
-        self.output_text = scrolledtext.ScrolledText(master, wrap=tk.WORD, width=100, height=30)
-        self.output_text.pack()
+        self.output_text = scrolledtext.ScrolledText(master, wrap=tk.WORD, width=100, height=30, bg='white', fg='black', font=('Courier', 10))
+        self.output_text.pack(pady=10)
 
         # Drapeau pour indiquer si la capture doit être arrêtée
         self.stop_flag = threading.Event()
+        self.packets = []
 
     def start_sniffer(self):
         interface = self.interface_combo.get()
@@ -99,19 +119,20 @@ class PacketSnifferApp:
 
             # Générer un nom de fichier unique avec un horodatage
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.save_file = os.path.join(SAVE_DIR, f"capture_resultats_{timestamp}.txt")
+            self.save_file = os.path.join(SAVE_DIR, f"capture_resultats_{timestamp}{self.format_var.get()}")
 
-            # Vider le fichier au début de la capture
-            with open(self.save_file, "w") as f:
-                f.write("Début de la capture...\n\n")
-
-            # Changer les permissions du fichier pour permettre à tous les utilisateurs de le supprimer
-            os.chmod(self.save_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+            # Vider le fichier au début de la capture si c'est un fichier texte
+            if self.format_var.get() == ".txt":
+                with open(self.save_file, "w") as f:
+                    f.write("Début de la capture...\n\n")
+                # Changer les permissions du fichier pour permettre à tous les utilisateurs de le supprimer
+                os.chmod(self.save_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
 
         self.output_text.delete(1.0, tk.END)
         self.stop_flag.clear()  # Réinitialiser le drapeau
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
+        self.packets = []  # Réinitialiser la liste des paquets
         threading.Thread(target=self.sniff_packets, args=(interface, int(packet_count)), daemon=True).start()
 
     def stop_sniffer(self):
@@ -131,8 +152,13 @@ IPv4: {IPv4count} | IPv6: {IPv6count}
             self.output_text.see(tk.END)
 
             if self.save_var.get():
-                with open(self.save_file, "a") as f:
-                    f.write("\n" + resume)
+                if self.format_var.get() == ".txt":
+                    with open(self.save_file, "a") as f:
+                        f.write("\n" + resume)
+                elif self.format_var.get() == ".pcap":
+                    scapy.wrpcap(self.save_file, self.packets)
+                    # Changer les permissions du fichier .pcap après sa création
+                    os.chmod(self.save_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
 
         except Exception as e:
             self.output_text.insert(tk.END, f"Erreur: {e}\n")
@@ -187,16 +213,19 @@ IPv4: {IPv4count} | IPv6: {IPv6count}
                 unknowncount += 1
 
             info += f"Résumé: {packet.summary()}\n"
-            info += "-"*50 + "\n"
+            info += "-" * 50 + "\n"
 
             # Affichage à l'écran
             self.output_text.insert(tk.END, info)
             self.output_text.see(tk.END)
 
             # Sauvegarde dans le fichier si demandé
-            if self.save_var.get():
+            if self.save_var.get() and self.format_var.get() == ".txt":
                 with open(self.save_file, "a") as f:
                     f.write(info)
+
+            # Ajouter le paquet à la liste pour sauvegarde en .pcap
+            self.packets.append(packet)
 
         except Exception as e:
             self.output_text.insert(tk.END, f"Erreur: {e}\n")
